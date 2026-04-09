@@ -25,25 +25,33 @@ On Windows, laptops like the Huawei MateBook X Pro use a proprietary background 
 
 ## 🚀 Installation
 
-This tool installs seamlessly as a system-wide binary.
+### Method 1: Quick Install (Recommended)
+You can install the dependencies, download the binary, and start the background service with a single command. Open your terminal and run:
 
-### 1. Install System Dependencies
+```bash
+wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
+```
+
+### Method 2: Manual Installation
+If you prefer to audit the installation steps yourself, you can install the tool manually.
+
+**1. Install System Dependencies**
 Ensure you have the Python `evdev` module provided by your OS package manager.
 ```bash
 sudo apt update
 sudo apt install python3-evdev
 ```
 
-### 2. Clone and Install
+**2. Clone and Install**
 Clone the repository and install the script as a standard system binary in `/usr/local/bin/`.
 ```bash
-git clone https://github.com/Husseinadq/linux-freetouch.git
+git clone [https://github.com/Husseinadq/linux-freetouch.git](https://github.com/Husseinadq/linux-freetouch.git)
 cd linux-freetouch
 sudo cp freetouch.py /usr/local/bin/linux-freetouch
 sudo chmod +x /usr/local/bin/linux-freetouch
 ```
 
-### 3. Enable the Background Service
+**3. Enable the Background Service**
 Copy the provided systemd service file and enable it to start automatically on boot.
 ```bash
 sudo cp freetouch.service /etc/systemd/system/
@@ -51,17 +59,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now freetouch.service
 ```
 
-### 4. Verify it is Running
-```bash
-sudo systemctl status freetouch.service
-```
-*If the status is glowing green and says "active (running)", go ahead and swipe the edge of your trackpad!*
-
 ---
 
 ## ⚙️ Configuration & Tuning
 
-Every trackpad has a different glass texture, resolution, and sensitivity. You can easily tune how the swipes feel by editing the constants at the top of the script.
+Every trackpad has a different glass texture, resolution, and sensitivity. You can easily tune how the swipes feel by editing the constants at the top of the installed script.
 
 ```bash
 sudo nano /usr/local/bin/linux-freetouch

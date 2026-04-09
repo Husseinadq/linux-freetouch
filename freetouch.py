@@ -3,20 +3,28 @@ import evdev
 from evdev import UInput, ecodes as e
 import sys
 
-# Constants
-DEVICE_NAME = "GXTP7863:00 27C6:01E0 Touchpad"
-RIGHT_EDGE_X = 3500
-LEFT_EDGE_X = 150
-Y_SWIPE_THRESHOLD = 50 # Adjust this back to whatever speed you liked!
-PALM_THRESHOLD = 8     # Anything larger than this is considered a palm
+# Settings (Percentages instead of hardcoded pixels)
+EDGE_WIDTH_PERCENT = 0.05  # The outer 5% of the pad acts as the volume/brightness slider
+SWIPE_SENSITIVITY = 0.02   # Finger must travel 2% of the pad's height to trigger 1 tick
+PALM_THRESHOLD = 8         # Touch size larger than this is ignored
 
 def get_touchpad():
-    """Locates the Huawei Free Touch input device."""
+    """Hunts for any active touchpad on the system."""
     try:
         devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
+        
+        # Look for common trackpad identifiers in the hardware name
+        keywords = ["touchpad", "synaptics", "elan", "alps", "gxtp"]
+        
         for dev in devices:
-            if dev.name == DEVICE_NAME:
-                return dev
+            name_lower = dev.name.lower()
+            if any(keyword in name_lower for keyword in keywords):
+                # Safely extract the absolute axis codes to check for multi-touch
+                caps = dev.capabilities()
+                if e.EV_ABS in caps:
+                    abs_codes = [cap[0] for cap in caps[e.EV_ABS]]
+                    if e.ABS_MT_POSITION_X in abs_codes:
+                        return dev
     except FileNotFoundError:
         pass
     return None
@@ -31,21 +39,39 @@ def main():
     touchpad = get_touchpad()
     
     if not touchpad:
-        print(f"Error: Could not find '{DEVICE_NAME}'. Are you running as root?")
+        print("Error: Could not find a compatible touchpad. Are you running as root?")
         sys.exit(1)
+
+    # --- DYNAMIC HARDWARE CALIBRATION ---
+    caps = dict(touchpad.capabilities()[e.EV_ABS])
+    x_info = caps[e.ABS_MT_POSITION_X]
+    y_info = caps[e.ABS_MT_POSITION_Y]
+    
+    min_x, max_x = x_info.min, x_info.max
+    min_y, max_y = y_info.min, y_info.max
+    
+    width = max_x - min_x
+    height = max_y - min_y
+    
+    # Calculate exact edge coordinates based on this specific laptop's hardware
+    right_edge_x = max_x - (width * EDGE_WIDTH_PERCENT)
+    left_edge_x = min_x + (width * EDGE_WIDTH_PERCENT)
+    y_swipe_threshold = height * SWIPE_SENSITIVITY
+
+    print(f"Universal Free Touch Daemon started.")
+    print(f"Hooked into: {touchpad.name} ({touchpad.path})")
+    print(f"Hardware Resolution: {width}x{height}")
+    print(f"Calculated Left Edge: < {left_edge_x} | Right Edge: > {right_edge_x}")
 
     capabilities = {
         e.EV_KEY: [e.KEY_VOLUMEUP, e.KEY_VOLUMEDOWN, e.KEY_BRIGHTNESSUP, e.KEY_BRIGHTNESSDOWN]
     }
     
     try:
-        ui = UInput(capabilities, name='huawei-freetouch-virtual')
+        ui = UInput(capabilities, name='universal-freetouch-virtual')
     except evdev.uinput.UInputError as err:
         print(f"UInput error: {err}. Make sure uinput kernel module is loaded.")
         sys.exit(1)
-
-    print(f"Huawei Free Touch Daemon started.")
-    print(f"Listening on: {touchpad.path}")
 
     # State Variables
     is_right_edge = False
@@ -55,19 +81,18 @@ def main():
 
     try:
         for event in touchpad.read_loop():
-            # 1. Track Touch Size for Palm Rejection
+            # 1. Palm Rejection
             if event.type == e.EV_ABS and event.code == e.ABS_MT_TOUCH_MAJOR:
                 if event.value >= PALM_THRESHOLD:
                     is_palm = True
 
-            # 2. Track X Coordinate for Edge Detection
+            # 2. X Coordinate for Edge Detection
             elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_X:
-                is_right_edge = event.value > RIGHT_EDGE_X
-                is_left_edge = event.value < LEFT_EDGE_X
+                is_right_edge = event.value > right_edge_x
+                is_left_edge = event.value < left_edge_x
 
-            # 3. Track Y Coordinate for Swipe Calculation
+            # 3. Y Coordinate for Swipe Calculation
             elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_Y:
-                # If a palm is detected, completely ignore the movement
                 if is_palm:
                     continue
 
@@ -76,7 +101,8 @@ def main():
                 if last_y is not None:
                     delta_y = last_y - current_y
 
-                    if abs(delta_y) > Y_SWIPE_THRESHOLD:
+                    # Use the dynamically calculated threshold!
+                    if abs(delta_y) > y_swipe_threshold:
                         if is_right_edge:
                             if delta_y > 0:
                                 tap_key(ui, e.KEY_VOLUMEUP)
@@ -93,12 +119,12 @@ def main():
                 else:
                     last_y = current_y
 
-            # 4. Reset State on Touch Release
+            # 4. Reset State
             elif event.type == e.EV_KEY and event.code == e.BTN_TOUCH:
                 if event.value == 0:
                     is_right_edge = False
                     is_left_edge = False
-                    is_palm = False # Reset palm status when hand is lifted
+                    is_palm = False
                     last_y = None
 
     except KeyboardInterrupt:

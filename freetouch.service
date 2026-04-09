@@ -1,0 +1,14 @@
+[Unit]
+Description=Universal Free Touch Gesture Daemon
+After=multi-user.target
+
+[Service]
+Type=simple
+User=root
+# Look how clean this is now:
+ExecStart=/usr/local/bin/linux-freetouch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

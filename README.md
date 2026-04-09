@@ -29,10 +29,8 @@ On Windows, laptops like the Huawei MateBook X Pro use a proprietary background 
 ### Method 1: Quick Install (Recommended)
 You can install the dependencies, download the binary, and start the background service with a single command. 
 
-> **⚠️ COPY/PASTE WARNING:** Please use the **Copy icon** in the top right corner of the code box below. If you manually highlight and copy the text, your browser may accidentally copy hidden hyperlink formatting, resulting in a `bash: syntax error near unexpected token '('` error in your terminal.
-
 ```bash
-wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
+wget -qO- https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh | sudo bash
 ```
 
 ### Method 2: Manual Installation
@@ -48,7 +46,7 @@ sudo apt install python3-evdev
 **2. Clone and Install**
 Clone the repository and install the script as a standard system binary in `/usr/local/bin/`.
 ```bash
-git clone [https://github.com/Husseinadq/linux-freetouch.git](https://github.com/Husseinadq/linux-freetouch.git)
+git clone https://github.com/Husseinadq/linux-freetouch.git
 cd linux-freetouch
 sudo cp freetouch.py /usr/local/bin/linux-freetouch
 sudo chmod +x /usr/local/bin/linux-freetouch
@@ -87,7 +85,7 @@ sudo systemctl restart freetouch.service
 To update to the latest version, you do not need to uninstall the old one. Simply re-run the installation command to fetch the newest code and automatically restart the background service:
 
 ```bash
-wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
+wget -qO- https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh | sudo bash
 ```
 
 ---

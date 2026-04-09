@@ -83,6 +83,7 @@ To update to the latest version, you do not need to uninstall the old one. Simpl
 
 ```bash
 wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
+```
 ---
 
 ## 🛠️ Troubleshooting

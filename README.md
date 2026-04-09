@@ -100,5 +100,20 @@ Pull requests are welcome! If you find a trackpad model that isn't recognized, o
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
 
+
 ---
+
+## 🗑️ Uninstallation
+
+If you want to remove Linux Free Touch from your system, simply run these commands to stop the daemon and remove the files:
+
+```bash
+sudo systemctl disable --now freetouch.service
+sudo rm /etc/systemd/system/freetouch.service
+sudo systemctl daemon-reload
+sudo rm /usr/local/bin/linux-freetouch
+```
+
+---
+
 *Built with ❤️ by [Husseinadq](https://github.com/Husseinadq) for the Linux community.*

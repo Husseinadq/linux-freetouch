@@ -3,23 +3,21 @@ import evdev
 from evdev import UInput, ecodes as e
 import sys
 
-# Settings (Percentages instead of hardcoded pixels)
+# --- Settings ---
 EDGE_WIDTH_PERCENT = 0.05  # The outer 5% of the pad acts as the volume/brightness slider
-SWIPE_SENSITIVITY = 0.02   # Finger must travel 2% of the pad's height to trigger 1 tick
+TOP_EDGE_PERCENT = 0.05    # The top 5% of the pad acts as the media timeline slider
+SWIPE_SENSITIVITY = 0.02   # Finger must travel 2% of the pad's height/width to trigger 1 tick
 PALM_THRESHOLD = 8         # Touch size larger than this is ignored
 
 def get_touchpad():
     """Hunts for any active touchpad on the system."""
     try:
         devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
-        
-        # Look for common trackpad identifiers in the hardware name
         keywords = ["touchpad", "synaptics", "elan", "alps", "gxtp"]
         
         for dev in devices:
             name_lower = dev.name.lower()
             if any(keyword in name_lower for keyword in keywords):
-                # Safely extract the absolute axis codes to check for multi-touch
                 caps = dev.capabilities()
                 if e.EV_ABS in caps:
                     abs_codes = [cap[0] for cap in caps[e.EV_ABS]]
@@ -30,7 +28,7 @@ def get_touchpad():
     return None
 
 def tap_key(ui, key_code):
-    """Simulates pressing and releasing a media key."""
+    """Simulates pressing and releasing a key."""
     ui.write(e.EV_KEY, key_code, 1)
     ui.write(e.EV_KEY, key_code, 0)
     ui.syn()
@@ -53,18 +51,20 @@ def main():
     width = max_x - min_x
     height = max_y - min_y
     
-    # Calculate exact edge coordinates based on this specific laptop's hardware
+    # Calculate exact edge boundaries
     right_edge_x = max_x - (width * EDGE_WIDTH_PERCENT)
     left_edge_x = min_x + (width * EDGE_WIDTH_PERCENT)
+    top_edge_y = min_y + (height * TOP_EDGE_PERCENT)
+    
     y_swipe_threshold = height * SWIPE_SENSITIVITY
+    x_swipe_threshold = width * SWIPE_SENSITIVITY
 
     print(f"Universal Free Touch Daemon started.")
     print(f"Hooked into: {touchpad.name} ({touchpad.path})")
-    print(f"Hardware Resolution: {width}x{height}")
-    print(f"Calculated Left Edge: < {left_edge_x} | Right Edge: > {right_edge_x}")
-
+    
+    # Add KEY_LEFT and KEY_RIGHT to our virtual keyboard capabilities
     capabilities = {
-        e.EV_KEY: [e.KEY_VOLUMEUP, e.KEY_VOLUMEDOWN, e.KEY_BRIGHTNESSUP, e.KEY_BRIGHTNESSDOWN]
+        e.EV_KEY: [e.KEY_VOLUMEUP, e.KEY_VOLUMEDOWN, e.KEY_BRIGHTNESSUP, e.KEY_BRIGHTNESSDOWN, e.KEY_LEFT, e.KEY_RIGHT]
     }
     
     try:
@@ -76,8 +76,10 @@ def main():
     # State Variables
     is_right_edge = False
     is_left_edge = False
+    is_top_edge = False
     is_palm = False
     last_y = None
+    last_x = None
 
     try:
         for event in touchpad.read_loop():
@@ -86,46 +88,56 @@ def main():
                 if event.value >= PALM_THRESHOLD:
                     is_palm = True
 
-            # 2. X Coordinate for Edge Detection
+            # 2. X Coordinate Tracking (Detect side edges + Calculate top edge swipe)
             elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_X:
                 is_right_edge = event.value > right_edge_x
                 is_left_edge = event.value < left_edge_x
 
-            # 3. Y Coordinate for Swipe Calculation
+                current_x = event.value
+                if not is_palm and is_top_edge:
+                    if last_x is not None:
+                        delta_x = last_x - current_x
+                        if abs(delta_x) > x_swipe_threshold:
+                            if delta_x > 0: # Swiped Left (RTL)
+                                tap_key(ui, e.KEY_LEFT)
+                            else: # Swiped Right (LTR)
+                                tap_key(ui, e.KEY_RIGHT)
+                            last_x = current_x
+                    else:
+                        last_x = current_x
+                else:
+                    last_x = current_x # Keep tracking to prevent jumpy math
+
+            # 3. Y Coordinate Tracking (Detect top edge + Calculate side edge swipes)
             elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_Y:
-                if is_palm:
-                    continue
+                is_top_edge = event.value < top_edge_y
 
                 current_y = event.value
-
-                if last_y is not None:
-                    delta_y = last_y - current_y
-
-                    # Use the dynamically calculated threshold!
-                    if abs(delta_y) > y_swipe_threshold:
-                        if is_right_edge:
-                            if delta_y > 0:
-                                tap_key(ui, e.KEY_VOLUMEUP)
-                            else:
-                                tap_key(ui, e.KEY_VOLUMEDOWN)
+                if not is_palm and (is_left_edge or is_right_edge):
+                    if last_y is not None:
+                        delta_y = last_y - current_y
+                        if abs(delta_y) > y_swipe_threshold:
+                            if is_right_edge:
+                                if delta_y > 0: tap_key(ui, e.KEY_VOLUMEUP)
+                                else: tap_key(ui, e.KEY_VOLUMEDOWN)
+                            elif is_left_edge:
+                                if delta_y > 0: tap_key(ui, e.KEY_BRIGHTNESSUP)
+                                else: tap_key(ui, e.KEY_BRIGHTNESSDOWN)
                             last_y = current_y
-
-                        elif is_left_edge:
-                            if delta_y > 0:
-                                tap_key(ui, e.KEY_BRIGHTNESSUP)
-                            else:
-                                tap_key(ui, e.KEY_BRIGHTNESSDOWN)
-                            last_y = current_y
+                    else:
+                        last_y = current_y
                 else:
                     last_y = current_y
 
-            # 4. Reset State
+            # 4. Reset State on Touch Release
             elif event.type == e.EV_KEY and event.code == e.BTN_TOUCH:
                 if event.value == 0:
                     is_right_edge = False
                     is_left_edge = False
+                    is_top_edge = False
                     is_palm = False
                     last_y = None
+                    last_x = None
 
     except KeyboardInterrupt:
         print("\nDaemon gracefully stopped.")

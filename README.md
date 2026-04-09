@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey.svg)]()
 
-**A universal, open-source user-space daemon that enables native edge-swipe gestures (Volume & Brightness) on Linux trackpads.**
+**A universal, open-source user-space daemon that enables native edge-swipe gestures (Volume, Brightness, & Media) on Linux trackpads.**
 
 Originally built to restore the **Huawei Free Touch** features on MateBook laptops running Ubuntu/Linux, this tool dynamically calibrates to work on almost any modern laptop trackpad (Dell, Lenovo, HP, Asus, etc.) that supports multi-touch hardware.
 
@@ -17,6 +17,7 @@ On Windows, laptops like the Huawei MateBook X Pro use a proprietary background 
 ## ✨ Features
 * 🔊 **Right Edge Swipe:** Smoothly adjust system Volume up/down.
 * ☀️ **Left Edge Swipe:** Smoothly adjust screen Brightness up/down.
+* ⏪ **Top Edge Swipe:** Skip forward/backward in video timelines (injects Left/Right arrow keys).
 * ✋ **Hardware Palm Rejection:** Intelligently ignores large surface touches so your palm doesn't accidentally trigger volume changes while typing.
 * 📐 **Dynamic Hardware Calibration:** Automatically calculates your specific trackpad's physical dimensions (X/Y axis maximums) to map the edges perfectly, regardless of your laptop's make or model.
 * 🪶 **Ultra-Lightweight:** Written in pure Python, running as an invisible `systemd` background service with virtually zero CPU overhead.
@@ -29,7 +30,7 @@ On Windows, laptops like the Huawei MateBook X Pro use a proprietary background 
 You can install the dependencies, download the binary, and start the background service with a single command. Open your terminal and run:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh | sudo bash
+wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
 ```
 
 ### Method 2: Manual Installation
@@ -70,20 +71,23 @@ sudo nano /usr/local/bin/linux-freetouch
 ```
 
 Find these variables at the top of the file:
-* `EDGE_WIDTH_PERCENT = 0.05` — Defines how thick the "active zone" is on the edges. (Default: the outer 5% of the pad).
-* `SWIPE_SENSITIVITY = 0.02` — Defines how far your finger has to travel to trigger 1 volume/brightness tick. (Decrease this number to make it more sensitive/faster).
-* `PALM_THRESHOLD = 8` — The minimum touch size to be considered a palm. (Increase this if your actual fingers are being ignored; decrease it if your palm is accidentally triggering volume changes).
+* `EDGE_WIDTH_PERCENT = 0.05` — Defines how thick the "active zone" is on the side edges.
+* `TOP_EDGE_PERCENT = 0.05` — Defines how thick the "active zone" is on the top edge.
+* `SWIPE_SENSITIVITY = 0.02` — Defines how far your finger has to travel to trigger 1 tick. (Decrease to make it faster).
+* `PALM_THRESHOLD = 8` — The minimum touch size to be considered a palm. (Increase this if your actual fingers are being ignored).
 
 After saving your changes, restart the service to apply them:
 ```bash
 sudo systemctl restart freetouch.service
 ```
+
 ### 🔄 How to Update
 To update to the latest version, you do not need to uninstall the old one. Simply re-run the installation command to fetch the newest code and automatically restart the background service:
 
 ```bash
 wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
 ```
+
 ---
 
 ## 🛠️ Troubleshooting
@@ -104,7 +108,6 @@ Pull requests are welcome! If you find a trackpad model that isn't recognized, o
 
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
-
 
 ---
 

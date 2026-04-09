@@ -29,7 +29,7 @@ On Windows, laptops like the Huawei MateBook X Pro use a proprietary background 
 You can install the dependencies, download the binary, and start the background service with a single command. Open your terminal and run:
 
 ```bash
-wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
+wget -qO- https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh | sudo bash
 ```
 
 ### Method 2: Manual Installation

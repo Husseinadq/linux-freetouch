@@ -78,7 +78,11 @@ After saving your changes, restart the service to apply them:
 ```bash
 sudo systemctl restart freetouch.service
 ```
+### 🔄 How to Update
+To update to the latest version, you do not need to uninstall the old one. Simply re-run the installation command to fetch the newest code and automatically restart the background service:
 
+```bash
+wget -qO- [https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh](https://raw.githubusercontent.com/Husseinadq/linux-freetouch/main/install.sh) | sudo bash
 ---
 
 ## 🛠️ Troubleshooting

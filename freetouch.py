@@ -83,13 +83,16 @@ def main():
 
     try:
         for event in touchpad.read_loop():
+            if event.type != e.EV_ABS and not (event.type == e.EV_KEY and event.code == e.BTN_TOUCH):
+                continue
+
             # 1. Palm Rejection
-            if event.type == e.EV_ABS and event.code == e.ABS_MT_TOUCH_MAJOR:
+            if event.code == e.ABS_MT_TOUCH_MAJOR:
                 if event.value >= PALM_THRESHOLD:
                     is_palm = True
 
-            # 2. X Coordinate Tracking (Detect side edges + Calculate top edge swipe)
-            elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_X:
+            # 2. X Position → Update side-edge flags + Top Edge horizontal swipe
+            if event.code == e.ABS_MT_POSITION_X:
                 is_right_edge = event.value > right_edge_x
                 is_left_edge = event.value < left_edge_x
 
@@ -98,18 +101,18 @@ def main():
                     if last_x is not None:
                         delta_x = last_x - current_x
                         if abs(delta_x) > x_swipe_threshold:
-                            if delta_x > 0: # Swiped Left (RTL)
+                            if delta_x > 0:  # Swiped Left
                                 tap_key(ui, e.KEY_LEFT)
-                            else: # Swiped Right (LTR)
+                            else:  # Swiped Right
                                 tap_key(ui, e.KEY_RIGHT)
                             last_x = current_x
                     else:
                         last_x = current_x
                 else:
-                    last_x = current_x # Keep tracking to prevent jumpy math
+                    last_x = current_x  # Keep tracking to prevent jumpy math
 
-            # 3. Y Coordinate Tracking (Detect top edge + Calculate side edge swipes)
-            elif event.type == e.EV_ABS and event.code == e.ABS_MT_POSITION_Y:
+            # 3. Y Position → Update top-edge flag + Side Edge vertical swipe
+            if event.code == e.ABS_MT_POSITION_Y:
                 is_top_edge = event.value < top_edge_y
 
                 current_y = event.value
@@ -129,8 +132,8 @@ def main():
                 else:
                     last_y = current_y
 
-            # 4. Reset State on Touch Release
-            elif event.type == e.EV_KEY and event.code == e.BTN_TOUCH:
+            # 5. Reset State on Touch Release
+            if event.type == e.EV_KEY and event.code == e.BTN_TOUCH:
                 if event.value == 0:
                     is_right_edge = False
                     is_left_edge = False
